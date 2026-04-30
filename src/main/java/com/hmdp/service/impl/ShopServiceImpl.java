@@ -49,34 +49,34 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         return Result.ok(shop);
     }
-    public Shop queryWithPassThough(Long id) throws InterruptedException {
-        String key =  CACHE_SHOP_KEY + id;
-
-        String shopJson = stringRedisTemplate.opsForValue().get(key);
-        //判断是否存在
-        if(StrUtil.isNotBlank(shopJson)){
-            //存在 返回商铺信息
-            Shop shop = JSONUtil.toBean(shopJson, Shop.class);
-            return shop;
-        }//判断商铺是否为空值
-        if(shopJson != null){
-            return null;
-        }
-        //不存在,根据id查询数据库
-        Shop shop = getById(id);
-        Thread.sleep(200);
-        if(shop == null){
-            //不存在 404
-            //返回Null到redis
-            stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL,TimeUnit.SECONDS);
-            return null;
-        }
-
-        //存在 写入redis
-        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        //存在 返回商铺信息
-        return shop;
-    }
+//    public Shop queryWithPassThough(Long id) throws InterruptedException {
+//        String key =  CACHE_SHOP_KEY + id;
+//
+//        String shopJson = stringRedisTemplate.opsForValue().get(key);
+//        //判断是否存在
+//        if(StrUtil.isNotBlank(shopJson)){
+//            //存在 返回商铺信息
+//            Shop shop = JSONUtil.toBean(shopJson, Shop.class);
+//            return shop;
+//        }//判断商铺是否为空值
+//        if(shopJson != null){
+//            return null;
+//        }
+//        //不存在,根据id查询数据库
+//        Shop shop = getById(id);
+//        Thread.sleep(200);
+//        if(shop == null){
+//            //不存在 404
+//            //返回Null到redis
+//            stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL,TimeUnit.SECONDS);
+//            return null;
+//        }
+//
+//        //存在 写入redis
+//        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
+//        //存在 返回商铺信息
+//        return shop;
+//    }
     public Shop queryWithMutex(Long id) {
         String key =  CACHE_SHOP_KEY + id;
 
@@ -118,60 +118,60 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         //存在 返回商铺信息
         return shop;
     }
-private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
-    public Shop queryWithLogicalExpire(Long id){
-        String key =  CACHE_SHOP_KEY + id;
-
-        String shopJson = stringRedisTemplate.opsForValue().get(key);
-        //判断是否存在
-        if(StrUtil.isBlank(shopJson)) {
-            //存在 返回商铺信息
-            return null;
-        }
-        //命中 json反序列化为对象
-        RedisData redisData = JSONUtil.toBean(shopJson, RedisData.class);
-        Shop shop =JSONUtil.toBean((JSONObject) redisData.getData(), Shop.class);
-        LocalDateTime expireTime = redisData.getExpireTime();
-        //判断是否过期
-        if(expireTime.isAfter(LocalDateTime.now())) {
-            //没有过期 返回店铺信息
-
-            return shop;
-        }
-
-        //过期 需要缓存重建
-        //获取互斥锁 判断是否成功
-        String lockkey=LOCK_SHOP_KEY+id;
-        boolean isLock = tryLock(lockkey);
-        if(isLock){
-            //成功 开启独立线程
-            CACHE_REBUILD_EXECUTOR.submit(()->{
-                try {
-                    this.saveShop2Redis(id,30L);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    unLock(lockkey);
-                }
-            });
-        }
-        //缓存重建
-                //失败
-        //不存在,根据id查询数据库
-         shop = getById(id);
-
-        if(shop == null){
-            //不存在 404
-            //返回Null到redis
-            stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL,TimeUnit.SECONDS);
-            return null;
-        }
-
-        //存在 写入redis
-        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        //存在 返回商铺信息
-        return shop;
-    }
+//private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+//    public Shop queryWithLogicalExpire(Long id){
+//        String key =  CACHE_SHOP_KEY + id;
+//
+//        String shopJson = stringRedisTemplate.opsForValue().get(key);
+//        //判断是否存在
+//        if(StrUtil.isBlank(shopJson)) {
+//            //存在 返回商铺信息
+//            return null;
+//        }
+//        //命中 json反序列化为对象
+//        RedisData redisData = JSONUtil.toBean(shopJson, RedisData.class);
+//        Shop shop =JSONUtil.toBean((JSONObject) redisData.getData(), Shop.class);
+//        LocalDateTime expireTime = redisData.getExpireTime();
+//        //判断是否过期
+//        if(expireTime.isAfter(LocalDateTime.now())) {
+//            //没有过期 返回店铺信息
+//
+//            return shop;
+//        }
+//
+//        //过期 需要缓存重建
+//        //获取互斥锁 判断是否成功
+//        String lockkey=LOCK_SHOP_KEY+id;
+//        boolean isLock = tryLock(lockkey);
+//        if(isLock){
+//            //成功 开启独立线程
+//            CACHE_REBUILD_EXECUTOR.submit(()->{
+//                try {
+//                    this.saveShop2Redis(id,30L);
+//                } catch (Exception e) {
+//                    throw new RuntimeException(e);
+//                } finally {
+//                    unLock(lockkey);
+//                }
+//            });
+//        }
+//        //缓存重建
+//                //失败
+//        //不存在,根据id查询数据库
+//         shop = getById(id);
+//
+//        if(shop == null){
+//            //不存在 404
+//            //返回Null到redis
+//            stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL,TimeUnit.SECONDS);
+//            return null;
+//        }
+//
+//        //存在 写入redis
+//        stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
+//        //存在 返回商铺信息
+//        return shop;
+//    }
     public void saveShop2Redis(Long id,Long expireSeconds){
         //查数据
         Shop shop = getById(id);
@@ -201,7 +201,7 @@ private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixed
 
 
 
-    private boolean  tryLock(String key){
+   private boolean  tryLock(String key){
         Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", CACHE_NULL_TTL, TimeUnit.SECONDS);
         return BooleanUtil.isTrue(flag);
     }

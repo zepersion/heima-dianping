@@ -123,7 +123,6 @@ public class CacheClient {
             stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL,TimeUnit.SECONDS);
             return null;
         }
-
         //存在 写入redis
         stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(r),CACHE_SHOP_TTL, TimeUnit.MINUTES);
         //存在 返回商铺信息

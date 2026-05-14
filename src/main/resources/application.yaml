@@ -9,9 +9,9 @@ spring:
     username: root
     password: root
   redis:
-    host: 192.168.150.101
+    host: 127.0.0.1
     port: 6379
-    password: 286549
+    password:
     lettuce:
       pool:
         max-active: 10
@@ -25,3 +25,19 @@ mybatis-plus:
 logging:
   level:
     com.hmdp: debug
+  redisson:
+
+    single-server-config:
+      address: redis://127.0.0.1:6379
+      password: null
+      connection-pool-size: 10
+langchain4j:
+    openai:
+      base-url: https://api.deepseek.com/v1
+      api-key: sk-fd3740967b2945fa8c4affd0b78ed9a9
+      model-name: doubao-pro-32k
+      timeout: 60s
+      max-retries: 2
+      temperature: 0.7
+      log-requests: true
+      log-responses: true

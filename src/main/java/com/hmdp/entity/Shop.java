@@ -106,4 +106,6 @@ public class Shop implements Serializable {
 
     @TableField(exist = false)
     private Double distance;
+
+
 }

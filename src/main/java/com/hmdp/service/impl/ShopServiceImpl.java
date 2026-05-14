@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -207,5 +208,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
     private void unLock(String key){
         stringRedisTemplate.delete(key);
+    }
+
+    @Override
+    public List<Shop> searchShops(String keyword, Object o) {
+        return lambdaQuery()
+                .like(StrUtil.isNotBlank(keyword), Shop::getName, keyword)
+                .list();
     }
 }

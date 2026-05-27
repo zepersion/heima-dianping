@@ -8,7 +8,10 @@ import com.hmdp.mapper.FollowMapper;
 import com.hmdp.service.IFollowService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.UserHolder;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 /**
  * <p>
@@ -20,6 +23,11 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> implements IFollowService {
+    @Resource
+    private RedisTemplate redisTemplate;
+
+
+
     @Override
     public Result follow(Long followId, boolean isfollow) {
         //导入当前用户信息
@@ -29,9 +37,18 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
             Follow follow = new Follow();
             follow.setId(followId);
             follow.setUserId(userId);
-            save(follow);
+            boolean isSuccess = save(follow);
+            if(isSuccess){
+                String key ="follow_"+userId;
+                //把关注用户的id 放入redis的set集合 sadd userId followerUserId
+                redisTemplate.opsForSet().add(key,followId);
+            }
         }else {
-            remove(new QueryWrapper<Follow>().eq("user_id",userId).eq("follow_user_id",followId));
+            boolean isSuccess = remove(new QueryWrapper<Follow>().eq("user_id", userId).eq("follow_user_id", followId));
+            if(isSuccess){
+                String key ="follow_"+userId;
+                redisTemplate.opsForSet().remove(key,followId);
+            }
         }
         return Result.ok();
     }

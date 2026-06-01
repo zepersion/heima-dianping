@@ -12,12 +12,15 @@ import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.RegexUtils;
 
+import com.hmdp.utils.UserHolder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -108,4 +111,19 @@ public Result sendCode(String phone, HttpSession session) {
 
     }
 
+    @Override
+    public Result sign() {
+        //获取当前用户
+        Long userId = UserHolder.getUser().getId();
+        //获取当前日期
+        LocalDateTime now = LocalDateTime.now();
+        //拼接key
+        String keyfix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
+        String key = USER_SIGN_KEY+ userId+keyfix;
+        //获取今天是本月的第几天
+        int dayOfMonth = now.getDayOfMonth();
+        //写入redis   SETBIT key offset boolean
+        stringRedisTemplate.opsForValue().setBit(key, dayOfMonth-1, true);
+        return Result.ok();
+    }
 }
